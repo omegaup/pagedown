@@ -414,6 +414,7 @@ else
             
             text = pluginHooks.preBlockGamut(text, blockGamutHookCallback);
             
+            text = _DoSampleIOTable(text);
             text = _DoHeaders(text);
 
             // Do Horizontal Rules:
@@ -1141,6 +1142,31 @@ else
 
                     return hashBlock("<blockquote>\n" + bq + "\n</blockquote>");
                 }
+            );
+            return text;
+        }
+
+        function _DoSampleIOTable(text) {
+            text = text.replace(/^( {0,3}\|\| *input *\n(?:.|\n)+?\n) {0,3}\|\| *end *\n/gm,
+                    function (whole, inner) {
+                        var matches = inner.split(/ {0,3}\|\| *(input|output|description) *\n/);
+                        var result = '';
+                        var first_row = true;
+                        for (var i = 1; i < matches.length; i += 2) {
+                            if (matches[i] == 'description') {
+                                result += '<td>' + _RunBlockGamut(matches[i+1]) + '</td>';
+                            } else {
+                                if (matches[i] == 'input') {
+                                    if (!first_row) result += '</tr>';
+                                    first_row = false;
+                                    result += '<tr>';
+                                }
+                                result += '<td><pre>' + matches[i+1].replace(/\s+$/, '') + '</pre></td>';
+                            }
+                        }
+                        result += '</tr>';
+                        return hashBlock('<table class="sample_io">\n' + result + '\n</table>');
+                    }
             );
             return text;
         }
