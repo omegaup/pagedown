@@ -64,7 +64,7 @@
 
     // The default text that appears in the dialog input box when entering
     // links.
-    var imageDefaultText = "http://";
+    var imageDefaultText = "";
     var linkDefaultText = "http://";
 
     // -------------------------------------------------------------------
@@ -1062,7 +1062,7 @@
     // callback: The function which is executed when the prompt is dismissed, either via OK or Cancel.
     //      It receives a single argument; either the entered text (if OK was chosen) or null (if Cancel
     //      was chosen).
-    ui.prompt = function (text, defaultInputText, callback) {
+    ui.prompt = function (text, defaultInputText, callback, isImage) {
 
         // These variables need to be declared at this level since they are used
         // in multiple functions.
@@ -1106,6 +1106,29 @@
             return false;
         };
 
+        var closeImage = function (isCancel) {
+            util.removeEvent(doc.body, "keydown", checkEscape);
+
+            if (isCancel || input.files.length < 1 || !input.files[0].type.match('image.*')) {
+                text = null;
+                dialog.parentNode.removeChild(dialog);
+                callback(text);
+            }
+            else {
+                var file = input.files[0];
+                var reader = new FileReader();
+                reader.onload = (function(file) {
+                    return function(e) {
+                        dialog.parentNode.removeChild(dialog);
+                        callback(e.target.result);
+                    };
+                })(file);
+                reader.readAsDataURL(file);
+            }
+
+            return false;
+        };
+
 
 
         // Create the text input box form/window.
@@ -1139,8 +1162,12 @@
 
             // The input text box
             input = doc.createElement("input");
-            input.type = "text";
-            input.value = defaultInputText;
+            if (isImage) {
+                input.type = "file";
+            } else {
+                input.type = "text";
+                input.value = defaultInputText;
+            }
             style = input.style;
             style.display = "block";
             style.width = "80%";
@@ -1150,7 +1177,11 @@
             // The ok button
             var okButton = doc.createElement("input");
             okButton.type = "button";
-            okButton.onclick = function () { return close(false); };
+            if (isImage) {
+                okButton.onclick = function () { return closeImage(false); };
+            } else {
+                okButton.onclick = function () { return close(false); };
+            }
             okButton.value = "OK";
             style = okButton.style;
             style.margin = "10px";
@@ -1161,7 +1192,11 @@
             // The cancel button
             var cancelButton = doc.createElement("input");
             cancelButton.type = "button";
-            cancelButton.onclick = function () { return close(true); };
+            if (isImage) {
+                cancelButton.onclick = function () { return closeImage(true); };
+            } else {
+                cancelButton.onclick = function () { return close(true); };
+            }
             cancelButton.value = "Cancel";
             style = cancelButton.style;
             style.margin = "10px";
@@ -1195,17 +1230,19 @@
 
             createDialog();
 
-            var defTextLen = defaultInputText.length;
-            if (input.selectionStart !== undefined) {
-                input.selectionStart = 0;
-                input.selectionEnd = defTextLen;
-            }
-            else if (input.createTextRange) {
-                var range = input.createTextRange();
-                range.collapse(false);
-                range.moveStart("character", -defTextLen);
-                range.moveEnd("character", defTextLen);
-                range.select();
+            if (!isImage) {
+                var defTextLen = defaultInputText.length;
+                if (input.selectionStart !== undefined) {
+                    input.selectionStart = 0;
+                    input.selectionEnd = defTextLen;
+                }
+                else if (input.createTextRange) {
+                    var range = input.createTextRange();
+                    range.collapse(false);
+                    range.moveStart("character", -defTextLen);
+                    range.moveEnd("character", defTextLen);
+                    range.select();
+                }
             }
 
             input.focus();
@@ -1755,11 +1792,15 @@
                     // the first bracket could then not act as the "not a backslash" for the second.
                     chunk.selection = (" " + chunk.selection).replace(/([^\\](?:\\\\)*)(?=[[\]])/g, "$1\\").substr(1);
                     
-                    var linkDef = " [999]: " + properlyEncoded(link);
-
-                    var num = that.addLinkDef(chunk, linkDef);
-                    chunk.startTag = isImage ? "![" : "[";
-                    chunk.endTag = "][" + num + "]";
+                    if (isImage) {
+                        chunk.startTag = "![";
+                        chunk.endTag = "](" + link + ")";
+                    } else {
+                        var linkDef = " [999]: " + properlyEncoded(link);
+                        var num = that.addLinkDef(chunk, linkDef);
+                        chunk.startTag = "[";
+                        chunk.endTag = "][" + num + "]";
+                    }
 
                     if (!chunk.selection) {
                         if (isImage) {
@@ -1777,7 +1818,7 @@
 
             if (isImage) {
                 if (!this.hooks.insertImageDialog(linkEnteredCallback))
-                    ui.prompt(this.getString("imagedialog"), imageDefaultText, linkEnteredCallback);
+                    ui.prompt(this.getString("imagedialog"), imageDefaultText, linkEnteredCallback, true);
             }
             else {
                 ui.prompt(this.getString("linkdialog"), linkDefaultText, linkEnteredCallback);
