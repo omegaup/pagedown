@@ -1792,15 +1792,10 @@
                     // the first bracket could then not act as the "not a backslash" for the second.
                     chunk.selection = (" " + chunk.selection).replace(/([^\\](?:\\\\)*)(?=[[\]])/g, "$1\\").substr(1);
                     
-                    if (isImage) {
-                        chunk.startTag = "![";
-                        chunk.endTag = "](" + link + ")";
-                    } else {
-                        var linkDef = " [999]: " + properlyEncoded(link);
-                        var num = that.addLinkDef(chunk, linkDef);
-                        chunk.startTag = "[";
-                        chunk.endTag = "][" + num + "]";
-                    }
+                    var linkDef = " [999]: " + properlyEncoded(link);
+                    var num = that.addLinkDef(chunk, linkDef);
+                    chunk.startTag = (isImage ? "!" : "") + "[";
+                    chunk.endTag = "][" + num + "]";
 
                     if (!chunk.selection) {
                         if (isImage) {
