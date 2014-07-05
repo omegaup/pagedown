@@ -1151,20 +1151,49 @@ else
                     function (whole, inner) {
                         var matches = inner.split(/ {0,3}\|\| *(input|output|description) *\n/);
                         var result = '';
+                        var description_column = false;
+                        for (var i = 1; i < matches.length; i += 2) {
+                            if (matches[i] == 'description') {
+                              description_column = true;
+                              break;
+                            }
+                        }
+                        result += '<thead><tr>';
+                        result += '<th>Entrada</th>';
+                        result += '<th>Salida</th>';
+                        if (description_column) {
+                          result += '<th>Descripción</th>';
+                        }
+                        result += '</tr></thead>';
                         var first_row = true;
+                        var columns = 0;
+                        result += '<tbody>';
                         for (var i = 1; i < matches.length; i += 2) {
                             if (matches[i] == 'description') {
                                 result += '<td>' + _RunBlockGamut(matches[i+1]) + '</td>';
+                                columns++;
                             } else {
                                 if (matches[i] == 'input') {
-                                    if (!first_row) result += '</tr>';
+                                    if (!first_row) {
+                                        while (columns < (description_column ? 3 : 2)) {
+                                            result += '<td></td>';
+                                            columns++;
+                                        }
+                                        result += '</tr>';
+                                    }
                                     first_row = false;
                                     result += '<tr>';
+                                    columns = 0;
                                 }
                                 result += '<td><pre>' + matches[i+1].replace(/\s+$/, '') + '</pre></td>';
+                                columns++;
                             }
                         }
-                        result += '</tr>';
+                        while (columns < (description_column ? 3 : 2)) {
+                            result += '<td></td>';
+                            columns++;
+                        }
+                        result += '</tr></tbody>';
                         return hashBlock('<table class="sample_io">\n' + result + '\n</table>');
                     }
             );
