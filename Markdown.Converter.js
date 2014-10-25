@@ -143,6 +143,12 @@ else
         // (see _ProcessListItems() for details):
         var g_list_level;
 
+				// Map of templates.
+				var templates = this.templates = {
+					"libinteractive:download": "<code class=\"libinteractive-download\">" +
+						"<i class=\"glyphicon glyphicon-download-alt\"></i></code>"
+				};
+
         this.makeHtml = function (text) {
 
             //
@@ -325,7 +331,7 @@ else
                     [ \t]*              // trailing spaces/tabs
                     (?=\n+)             // followed by a newline
                 )                       // attacklab: there are sentinel newlines at end of document
-            /gm,function(){...}};
+            /gm,function(){...};
             */
             text = text.replace(/^(<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math)\b[^\r]*?.*<\/\2>[ \t]*(?=\n+)\n)/gm, hashElement);
 
@@ -465,6 +471,7 @@ else
             
             text = _EncodeAmpsAndAngles(text);
             text = _DoItalicsAndBold(text);
+						text = _DoTemplates(text);
 
             // Do hard breaks:
             text = text.replace(/  +\n/g, " <br>\n");
@@ -1096,6 +1103,19 @@ else
             "$1<em>$3</em>$4");
 
             return text;
+        }
+
+        function _DoTemplates(text) {
+            return text.replace(/^\s*\{\{([a-z0-9_:]+)\}\}\s*$/g,
+            	function(wholematch, m1) {
+								if (templates.hasOwnProperty(m1)) {
+										console.log(templates[m1]);
+                    return hashBlock(templates[m1]);
+								}
+								return hashBlock(
+									"<strong style=\"color: red\">Unrecognized template name: " + m1 +
+									"</strong>");
+							});
         }
 
         function _DoBlockQuotes(text) {
