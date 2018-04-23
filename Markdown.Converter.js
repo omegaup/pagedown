@@ -56,7 +56,9 @@ else
     function identity(x) { return x; }
     function returnFalse(x) { return false; }
 
-    function HookCollection() { }
+    function HookCollection() {
+        this.isBoolean = {};
+    }
 
     HookCollection.prototype = {
 
@@ -65,8 +67,15 @@ else
             if (!original)
                 throw new Error("unknown hook " + hookname);
 
-            if (original === identity)
+            if (original === identity || original == returnFalse)
                 this[hookname] = func;
+            else if (this.isBoolean.hasOwnProperty(hookname))
+                this[hookname] = function (text) {
+                    var args = Array.prototype.slice.call(arguments, 0);
+                    if (func.apply(null, args))
+                        return true;
+                    return original.apply(null, args);
+                };
             else
                 this[hookname] = function (text) {
                     var args = Array.prototype.slice.call(arguments, 0);
@@ -83,6 +92,7 @@ else
             this[hookname] = identity;
         },
         addFalse: function (hookname) {
+            this.isBoolean[hookname] = true;
             this[hookname] = returnFalse;
         }
     };
