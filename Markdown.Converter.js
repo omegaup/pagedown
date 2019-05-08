@@ -498,6 +498,7 @@ else
         }
         
         var blockGamutHookCallback = function (t) { return _RunBlockGamut(t); }
+        var spanGamutHookCallback = function (t) { return _RunSpanGamut(t); }
 
         function _RunBlockGamut(text, doNotUnhash, doNotCreateParagraphs) {
             //
@@ -505,7 +506,7 @@ else
             // tags like paragraphs, headers, and list items.
             //
             
-            text = pluginHooks.preBlockGamut(text, blockGamutHookCallback);
+            text = pluginHooks.preBlockGamut(text, blockGamutHookCallback, spanGamutHookCallback);
             
             text = _DoHeaders(text);
 
@@ -519,7 +520,7 @@ else
             text = _DoCodeBlocks(text);
             text = _DoBlockQuotes(text);
             
-            text = pluginHooks.postBlockGamut(text, blockGamutHookCallback);
+            text = pluginHooks.postBlockGamut(text, blockGamutHookCallback, spanGamutHookCallback);
 
             // We already ran _HashHTMLBlocks() before, in Markdown(), but that
             // was to escape raw HTML in the original Markdown source. This time,
