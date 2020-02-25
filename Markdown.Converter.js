@@ -290,7 +290,7 @@ else
             // contorted like /[ \t]*\n+/ .
             text = text.replace(/^[ \t]+$/mg, "");
             
-            text = pluginHooks.postNormalization(text);
+            text = pluginHooks.postNormalization(text, blockGamutHookCallback, spanGamutHookCallback);
 
             // Turn block-level HTML blocks into hash entries
             text = _HashHTMLBlocks(text);
