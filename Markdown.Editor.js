@@ -2,6 +2,15 @@
 
 (function () {
 
+    var output, HookCollection;
+    if (typeof exports === "object" && typeof require === "function") { // we're in a CommonJS (e.g. Node.js) module
+        output = exports;
+        HookCollection = require("./Markdown.Converter").HookCollection;
+    } else {
+        output = window.Markdown;
+        HookCollection = output.HookCollection;
+    }
+
     var util = {},
         position = {},
         ui = {},
@@ -94,7 +103,7 @@
     // - getConverter() returns the markdown converter object that was passed to the constructor
     // - run() actually starts the editor; should be called after all necessary plugins are registered. Calling this more than once is a no-op.
     // - refreshPreview() forces the preview to be updated. This method is only available after run() was called.
-    Markdown.Editor = function (markdownConverter, idPostfix, options) {
+    output.Editor = function (markdownConverter, idPostfix, options) {
         
         options = options || {};
 
@@ -111,7 +120,7 @@
 
         this.getPostfix = function () { return idPostfix; }
 
-        var hooks = this.hooks = new Markdown.HookCollection();
+        var hooks = this.hooks = new HookCollection();
         hooks.addNoop("onPreviewRefresh");       // called with no arguments after the preview has been refreshed
         hooks.addNoop("postBlockquoteCreation"); // called with the user's selection *after* the blockquote was created; should return the actual to-be-inserted text
         hooks.addFalse("insertImageDialog");     /* called with one parameter: a callback to be called with the URL of the image. If the application creates
