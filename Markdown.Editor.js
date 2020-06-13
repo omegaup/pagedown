@@ -141,7 +141,7 @@
             if (panels)
                 return; // already initialized
 
-            panels = new PanelCollection(idPostfix);
+            panels = options.panels || PanelCollection(idPostfix);
             var commandManager = new CommandManager(hooks, getString, markdownConverter, options.wrapImageInLink, options.convertImagesToLinks);
             var previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); });
             var undoManager, uiManager;
@@ -318,9 +318,11 @@
     // and 8) and ONLY on button clicks.  Keyboard shortcuts work
     // normally since the focus never leaves the textarea.
     function PanelCollection(postfix) {
-        this.buttonBar = doc.getElementById("wmd-button-bar" + postfix);
-        this.preview = doc.getElementById("wmd-preview" + postfix);
-        this.input = doc.getElementById("wmd-input" + postfix);
+        return {
+            buttonBar: doc.getElementById("wmd-button-bar" + postfix),
+            preview: doc.getElementById("wmd-preview" + postfix),
+            input: doc.getElementById("wmd-input" + postfix),
+        };
     };
 
     // Returns true if the DOM element is visible, false if it's hidden.
