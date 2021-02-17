@@ -809,6 +809,7 @@
 
             if (stateObj.text != undefined && stateObj.text != inputArea.value) {
                 inputArea.value = stateObj.text;
+                inputArea.dispatchEvent(new Event('change'));
             }
             this.setInputAreaSelection();
             inputArea.scrollTop = stateObj.scrollTop;
@@ -1087,7 +1088,7 @@
     //      It receives a single argument; either the entered text (if OK was chosen) or null (if Cancel
     //      was chosen).
     // isImage: Whether this is an image callback.
-    ui.prompt = function (text, defaultInputText, ok, cancel, callback, isImage, inputBox) {
+    ui.prompt = function (text, defaultInputText, ok, cancel, callback, isImage) {
 
         // These variables need to be declared at this level since they are used
         // in multiple functions.
@@ -1129,7 +1130,6 @@
 
             dialog.parentNode.removeChild(dialog);
 
-            inputBox.dispatchEvent(new Event('change'));
             callback(text);
             return false;
         };
@@ -1152,7 +1152,6 @@
                     };
                 })(file);
                 reader.readAsDataURL(file);
-                inputBox.dispatchEvent(new Event('change'));
             }
 
             return false;
@@ -1436,7 +1435,6 @@
             if (button.execute) {
                 button.execute(undoManager);
             }
-            inputBox.dispatchEvent(new Event('change'));
         };
 
         function setupButton(button, isEnabled) {
@@ -1531,12 +1529,12 @@
             buttons.italic = makeButton("wmd-italic-button", getString("italic"), "-20px", bindCommand("doItalic"));
             makeSpacer(1);
             buttons.link = makeButton("wmd-link-button", getString("link"), "-40px", bindCommand(function (chunk, postProcessing) {
-                return this.doLinkOrImage(chunk, postProcessing, false, inputBox);
+                return this.doLinkOrImage(chunk, postProcessing, false);
             }));
             buttons.quote = makeButton("wmd-quote-button", getString("quote"), "-60px", bindCommand("doBlockquote"));
             buttons.code = makeButton("wmd-code-button", getString("code"), "-80px", bindCommand("doCode"));
             buttons.image = makeButton("wmd-image-button", getString("image"), "-100px", bindCommand(function (chunk, postProcessing) {
-                return this.doLinkOrImage(chunk, postProcessing, true, inputBox);
+                return this.doLinkOrImage(chunk, postProcessing, true);
             }));
             makeSpacer(2);
             buttons.olist = makeButton("wmd-olist-button", getString("olist"), "-120px", bindCommand(function (chunk, postProcessing) {
@@ -1855,7 +1853,7 @@
         });
     }
 
-    commandProto.doLinkOrImage = function (chunk, postProcessing, isImage, inputBox) {
+    commandProto.doLinkOrImage = function (chunk, postProcessing, isImage) {
 
         chunk.trimWhitespace();
         chunk.findTags(/\s*!?\[/, /\][ ]?(?:\n[ ]*)?(\[.*?\])?/);
@@ -1942,18 +1940,17 @@
                     }
                 }
                 postProcessing();
-                inputBox.dispatchEvent(new Event('change'));
             };
 
             background = ui.createBackground();
 
             if (isImage) {
                 if (!this.hooks.insertImageDialog(linkEnteredCallback))
-                    ui.prompt(this.getString("imagedialog"), imageDefaultText, this.getString("ok"), this.getString("cancel"), linkEnteredCallback, true, inputBox);
+                    ui.prompt(this.getString("imagedialog"), imageDefaultText, this.getString("ok"), this.getString("cancel"), linkEnteredCallback, true);
             }
             else {
                 if (!this.hooks.insertLinkDialog(linkEnteredCallback))
-                    ui.prompt(this.getString("linkdialog"), linkDefaultText, this.getString("ok"), this.getString("cancel"), linkEnteredCallback, false, inputBox);
+                    ui.prompt(this.getString("linkdialog"), linkDefaultText, this.getString("ok"), this.getString("cancel"), linkEnteredCallback);
             }
             return true;
         }
