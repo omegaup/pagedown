@@ -104,7 +104,7 @@
     // - run() actually starts the editor; should be called after all necessary plugins are registered. Calling this more than once is a no-op.
     // - refreshPreview() forces the preview to be updated. This method is only available after run() was called.
     output.Editor = function (markdownConverter, idPostfix, options) {
-
+        
         options = options || {};
 
         if (typeof options.handler === "function") { //backwards compatible behavior
@@ -115,7 +115,7 @@
             options.strings.help = options.strings.help || options.helpButton.title;
         }
         var getString = function (identifier) { return options.strings[identifier] || defaultsStrings[identifier]; }
-
+        
         idPostfix = idPostfix || "";
 
         this.getPostfix = function () { return idPostfix; }
@@ -1046,9 +1046,9 @@
 
         var background = doc.createElement("div"),
             style = background.style;
-
+        
         background.className = "wmd-prompt-background";
-
+        
         style.position = "absolute";
         style.top = "0";
 
@@ -1731,13 +1731,13 @@
             fakedefs += " [" + offset + "]: " + testlink + offset + "/unicorn\n";
             return "[" + offset + "]";
         });
-
+        
         rendered = this.converter.makeHtml(uniquified + fakedefs);
-
+        
         var okayToModify = function(offset) {
             return rendered.indexOf(testlink + offset + "/unicorn") !== -1;
         }
-
+        
         // property names are "L_" + link (prefixed to prevent collisions with built-in properties),
         // values are the definition numbers
         var addedDefsByUrl = {};
@@ -1779,7 +1779,7 @@
         var len = chunk.before.length;
         chunk.before = chunk.before.replace(regex, getLink);
         skippedChars += len;
-
+        
         len = chunk.selection.length;
         var refOut;
         if (linkDef) {
@@ -1788,7 +1788,7 @@
         else {
             chunk.selection = chunk.selection.replace(regex, getLink);
         }
-        skippedChars += len;
+        skippedChars += len;        
 
         chunk.after = chunk.after.replace(regex, getLink);
 
@@ -1808,7 +1808,7 @@
     // sure the URL and the optinal title are "nice".
     function properlyEncoded(linkdef) {
         return linkdef.replace(/^\s*(.*?)(?:\s+"(.+)")?\s*$/, function (wholematch, link, title) {
-
+            
             var inQueryString = false;
 
             // Having `[^\w\d-./]` in there is just a shortcut that lets us skip
@@ -1833,7 +1833,7 @@
                         inQueryString = true;
                         return "?";
                         break;
-
+                    
                     // In the query string, a plus and a space are identical -- normalize.
                     // Not strictly necessary, but identical behavior to the previous version
                     // of this function.
@@ -1844,7 +1844,7 @@
                 }
                 return encodeURI(match);
             })
-
+            
             if (title) {
                 title = title.trim ? title.trim() : title.replace(/^\s*/, "").replace(/\s*$/, "");
                 title = title.replace(/"/g, "quot;").replace(/\(/g, "&#40;").replace(/\)/g, "&#41;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1869,7 +1869,7 @@
 
         }
         else {
-
+            
             // We're moving start and end tag back into the selection, since (as we're in the else block) we're not
             // *removing* a link, but *adding* one, so whatever findTags() found is now back to being part of the
             // link text. linkEnteredCallback takes care of escaping any brackets.
@@ -1907,7 +1907,7 @@
                     // would mean a zero-width match at the start. Since zero-width matches advance the string position,
                     // the first bracket could then not act as the "not a backslash" for the second.
                     chunk.selection = (" " + chunk.selection).replace(/([^\\](?:\\\\)*)(?=[[\]])/g, "$1\\").substr(1);
-
+                    
                     var linkDef = " [999]: " + properlyEncoded(link);
 
                     var num = that.addLinkDef(chunk, linkDef);
@@ -1966,7 +1966,7 @@
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}([*+-]|\d+[.])[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}>[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ \t]+\n$/, "\n\n");
-
+        
         // There's no selection, end the cursor wasn't at the end of the line:
         // The user wants to split the current list item / code line / blockquote line
         // (for the latter it doesn't really matter) in two. Temporarily select the
@@ -1994,7 +1994,7 @@
                 commandMgr.doCode(chunk);
             }
         }
-
+        
         if (fakeSelection) {
             chunk.after = chunk.selection + chunk.after;
             chunk.selection = "";
