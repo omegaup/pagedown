@@ -809,6 +809,7 @@
 
             if (stateObj.text != undefined && stateObj.text != inputArea.value) {
                 inputArea.value = stateObj.text;
+                inputArea.dispatchEvent(new Event('change'));
             }
             this.setInputAreaSelection();
             inputArea.scrollTop = stateObj.scrollTop;
