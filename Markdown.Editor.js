@@ -1497,6 +1497,11 @@
             var highlightYShift = "-40px";
 
             var buttonRow = document.createElement("ul");
+            buttonRow.style.display = "flex"
+            buttonRow.style.flexDirection = "row"
+            buttonRow.style.justifyContent = "flex-start"
+            buttonRow.style.flexWrap = "wrap"
+            buttonRow.style.height = "max-content"
             buttonRow.id = "wmd-button-row" + postfix;
             buttonRow.className = 'wmd-button-row';
             buttonRow = buttonBar.appendChild(buttonRow);
@@ -1504,7 +1509,8 @@
             var makeButton = function (id, title, XShift, textOp) {
                 var button = document.createElement("li");
                 button.className = "wmd-button";
-                button.style.left = xPosition + "px";
+                button.style.position = "initial"
+                // button.style.left = xPosition + "px";
                 xPosition += 25;
                 var buttonImage = document.createElement("span");
                 button.id = id + postfix;
@@ -1520,11 +1526,11 @@
             var makeSpacer = function (num) {
                 var spacer = document.createElement("li");
                 spacer.className = "wmd-spacer wmd-spacer" + num;
+                spacer.style.position = "initial"
                 spacer.id = "wmd-spacer" + num + postfix;
                 buttonRow.appendChild(spacer);
                 xPosition += 25;
             }
-
             buttons.bold = makeButton("wmd-bold-button", getString("bold"), "0px", bindCommand("doBold"));
             buttons.italic = makeButton("wmd-italic-button", getString("italic"), "-20px", bindCommand("doItalic"));
             makeSpacer(1);
