@@ -1510,7 +1510,6 @@
                 var button = document.createElement("li");
                 button.className = "wmd-button";
                 button.style.position = "initial"
-                // button.style.left = xPosition + "px";
                 xPosition += 25;
                 var buttonImage = document.createElement("span");
                 button.id = id + postfix;
