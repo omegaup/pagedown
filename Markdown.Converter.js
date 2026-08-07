@@ -155,6 +155,10 @@ else
         var g_list_level;
         
         OPTIONS = OPTIONS || {};
+        var blocked = OPTIONS.blocked || [];
+        var isBlocked = function(feature) {
+            return blocked.indexOf(feature) !== -1;
+        };
         var asciify = identity, deasciify = identity;
         if (OPTIONS.nonAsciiLetters) {
 
@@ -508,18 +512,25 @@ else
             
             text = pluginHooks.preBlockGamut(text, blockGamutHookCallback, spanGamutHookCallback);
             
-            text = _DoHeaders(text);
+            if (!isBlocked("heading")) {
+                text = _DoHeaders(text);
+            }
 
             // Do Horizontal Rules:
-            var replacement = "<hr />\n";
-            text = text.replace(/^[ ]{0,2}( ?\*){3,}[ \t]*$/gm, replacement);
-            text = text.replace(/^[ ]{0,2}( ?-){3,}[ \t]*$/gm, replacement);
-            text = text.replace(/^[ ]{0,2}( ?_){3,}[ \t]*$/gm, replacement);
-
-            text = _DoLists(text);
-            text = _DoCodeBlocks(text);
-            text = _DoBlockQuotes(text);
+            if (!isBlocked("hr")) {
+                var replacement = "<hr />\n";
+                text = text.replace(/^[ ]{0,2}( ?\*){3,}[ \t]*$/gm, replacement);
+                text = text.replace(/^[ ]{0,2}( ?-){3,}[ \t]*$/gm, replacement);
+                text = text.replace(/^[ ]{0,2}( ?_){3,}[ \t]*$/gm, replacement);
+            }
             
+            text = _DoLists(text);
+            if (!isBlocked("code")) {
+                text = _DoCodeBlocks(text);
+            }
+            if (!isBlocked("quote")) {
+                text = _DoBlockQuotes(text);
+            }
             text = pluginHooks.postBlockGamut(text, blockGamutHookCallback, spanGamutHookCallback);
 
             // We already ran _HashHTMLBlocks() before, in Markdown(), but that
@@ -541,19 +552,27 @@ else
 
             text = pluginHooks.preSpanGamut(text);
             
-            text = _DoCodeSpans(text);
+            if (!isBlocked("code")) {
+                text = _DoCodeSpans(text);
+            }
             text = _EscapeSpecialCharsWithinTagAttributes(text);
             text = _EncodeBackslashEscapes(text);
 
             // Process anchor and image tags. Images must come first,
             // because ![foo][f] looks like an anchor.
-            text = _DoImages(text);
-            text = _DoAnchors(text);
+            if (!isBlocked("image")) {
+                text = _DoImages(text);
+            }
+            if (!isBlocked("link")) {
+                text = _DoAnchors(text);
+            }
 
             // Make links out of things like `<http://example.com/>`
             // Must come after _DoAnchors(), because you can use < and >
             // delimiters in inline links like [this](<url>).
-            text = _DoAutoLinks(text);
+            if (!isBlocked("link")) {
+                text = _DoAutoLinks(text);
+            }
             
             text = text.replace(/~P/g, "://"); // put in place to prevent autolinking; reset now
             
@@ -931,6 +950,9 @@ else
                 text = text.replace(whole_list, function (wholeMatch, m1, m2) {
                     var list = m1;
                     var list_type = (m2.search(/[*+-]/g) > -1) ? "ul" : "ol";
+                    if ((list_type === "ul" && isBlocked("ulist")) || (list_type === "ol" && isBlocked("olist"))) {
+                        return wholeMatch;
+                    }
                     var first_number;
                     if (list_type === "ol")
                         first_number = parseInt(m2, 10)
@@ -955,6 +977,9 @@ else
                     var list = m2;
 
                     var list_type = (m3.search(/[*+-]/g) > -1) ? "ul" : "ol";
+                    if ((list_type === "ul" && isBlocked("ulist")) || (list_type === "ol" && isBlocked("olist"))) {
+                        return wholeMatch;
+                    }
 
                     var first_number;
                     if (list_type === "ol")
@@ -1219,13 +1244,17 @@ else
             // (?!\2)              Not followed by another marker character (ensuring that we match the
             //                     rightmost two in a longer row)...
             // (?=[\W_]|$)         ...but by any other non-word character or the end of string.
-            text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)\2(?=\S)([^\r]*?\S)\2\2(?!\2)(?=[\W_]|$)/g,
-            "$1<strong>$3</strong>");
+            if (!isBlocked("bold")) {
+                text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)\2(?=\S)([^\r]*?\S)\2\2(?!\2)(?=[\W_]|$)/g,
+                "$1<strong>$3</strong>");
+            }
 
             // This is almost identical to the <strong> regex, except 1) there's obviously just one marker
             // character, and 2) the italicized string cannot contain the marker character.
-            text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)(?=\S)((?:(?!\2)[^\r])*?\S)\2(?!\2)(?=[\W_]|$)/g,
-            "$1<em>$3</em>");
+            if (!isBlocked("italic")) {
+                text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)(?=\S)((?:(?!\2)[^\r])*?\S)\2(?!\2)(?=[\W_]|$)/g,
+                "$1<em>$3</em>");
+            }
 
             return deasciify(text);
         }
@@ -1277,8 +1306,10 @@ else
             // )
             // \2                               actually capture the closing delimiter (and make sure that it matches the opening one)
           
-            text = text.replace(/(?=[^\r][*_]|[*_])(^|(?=\W__|(?!\*)[\W_]\*\*|\w\*\*\w)[^\r])(\*\*|__)(?!\2)(?=\S)((?:|[^\r]*?(?!\2)[^\r])(?=\S_|\w|\S\*\*(?:[\W_]|$)).)(?=__(?:\W|$)|\*\*(?:[^*]|$))\2/g,
-            "$1<strong>$3</strong>");
+            if (!isBlocked("bold")) {
+                text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)\2(?=\S)([^\r]*?\S)\2\2(?!\2)(?=[\W_]|$)/g,
+                "$1<strong>$3</strong>");
+            }
 
             // now <em>:
             // (?=[^\r][*_]|[*_])               Optimization, see above.
@@ -1320,8 +1351,10 @@ else
             // )
             // \2                               actually capture the closing delimiter (and make sure that it matches the opening one)
 
-            text = text.replace(/(?=[^\r][*_]|[*_])(^|(?=\W_|(?!\*)(?:[\W_]\*|\D\*(?=\w)\D))[^\r])(\*|_)(?!\2\2\2)(?=\S)((?:(?!\2)[^\r])*?(?=[^\s_]_|(?=\w)\D\*\D|[^\s*]\*(?:[\W_]|$)).)(?=_(?:\W|$)|\*(?:[^*]|$))\2/g,
-            "$1<em>$3</em>");
+            if (!isBlocked("italic")) {
+                text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)(?=\S)((?:(?!\2)[^\r])*?\S)\2(?!\2)(?=[\W_]|$)/g,
+                "$1<em>$3</em>");
+            }
             
             return deasciify(text);
         }        

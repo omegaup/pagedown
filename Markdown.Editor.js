@@ -123,6 +123,7 @@
     output.Editor = function (markdownConverter, idPostfix, options) {
         
         options = options || {};
+        options.blocked = options.blocked || [];
 
         if (typeof options.handler === "function") { //backwards compatible behavior
             options = { helpButton: options };
@@ -159,7 +160,7 @@
                 return; // already initialized
 
             panels = options.panels || PanelCollection(idPostfix);
-            var commandManager = new CommandManager(hooks, getString, markdownConverter, options.wrapImageInLink, options.convertImagesToLinks);
+            var commandManager = new CommandManager(hooks, getString, markdownConverter, options.wrapImageInLink, options.convertImagesToLinks, options.blocked);
             var previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); });
             var undoManager, uiManager;
 
@@ -176,7 +177,7 @@
                 }
             }
 
-            uiManager = new UIManager(idPostfix, panels, undoManager, previewManager, commandManager, options.helpButton, getString);
+            uiManager = new UIManager(idPostfix, panels, undoManager, previewManager, commandManager, options.helpButton, getString, options.blocked);
             uiManager.setUndoRedoButtonStates();
 
             var forceRefresh = that.refreshPreview = function () { previewManager.refresh(true); };
@@ -1292,10 +1293,14 @@
         }, 0);
     };
 
-    function UIManager(postfix, panels, undoManager, previewManager, commandManager, helpOptions, getString) {
+    function UIManager(postfix, panels, undoManager, previewManager, commandManager, helpOptions, getString, blocked) {
 
         var inputBox = panels.input,
             buttons = {}; // buttons.undo, buttons.link, etc. The actual DOM elements.
+
+        var isBlocked = function (feature) {
+            return blocked && blocked.indexOf(feature) !== -1;
+        };
 
         makeSpritedButtonRow();
 
@@ -1314,44 +1319,44 @@
 
                 switch (keyCodeStr) {
                     case "b":
-                        doClick(buttons.bold);
+                        if (!isBlocked("bold") && buttons.bold) doClick(buttons.bold);
                         break;
                     case "i":
-                        doClick(buttons.italic);
+                        if (!isBlocked("italic") && buttons.italic) doClick(buttons.italic);
                         break;
                     case "l":
-                        doClick(buttons.link);
+                        if (!isBlocked("link") && buttons.link) doClick(buttons.link);
                         break;
                     case "q":
-                        doClick(buttons.quote);
+                        if (!isBlocked("quote") && buttons.quote) doClick(buttons.quote);
                         break;
                     case "k":
-                        doClick(buttons.code);
+                        if (!isBlocked("code") && buttons.code) doClick(buttons.code);
                         break;
                     case "g":
-                        doClick(buttons.image);
+                        if (!isBlocked("image") && buttons.image) doClick(buttons.image);
                         break;
                     case "o":
-                        doClick(buttons.olist);
+                        if (!isBlocked("olist") && buttons.olist) doClick(buttons.olist);
                         break;
                     case "u":
-                        doClick(buttons.ulist);
+                        if (!isBlocked("ulist") && buttons.ulist) doClick(buttons.ulist);
                         break;
                     case "h":
-                        doClick(buttons.heading);
+                        if (!isBlocked("heading") && buttons.heading) doClick(buttons.heading);
                         break;
                     case "r":
-                        doClick(buttons.hr);
+                        if (!isBlocked("hr") && buttons.hr) doClick(buttons.hr);
                         break;
                     case "y":
-                        doClick(buttons.redo);
+                        if (!isBlocked("redo") && buttons.redo) doClick(buttons.redo);
                         break;
                     case "z":
                         if (key.shiftKey) {
-                            doClick(buttons.redo);
+                            if (!isBlocked("redo") && buttons.redo) doClick(buttons.redo);
                         }
                         else {
-                            doClick(buttons.undo);
+                            if (!isBlocked("undo") && buttons.undo) doClick(buttons.undo);
                         }
                         break;
                     default:
@@ -1523,7 +1528,10 @@
             buttonRow.className = 'wmd-button-row';
             buttonRow = buttonBar.appendChild(buttonRow);
             var xPosition = 0;
-            var makeButton = function (id, title, XShift, textOp) {
+            var makeButton = function (id, title, XShift, textOp, featureName) {
+                if (featureName && isBlocked(featureName)) {
+                    return null;
+                }
                 var button = document.createElement("li");
                 button.className = "wmd-button";
                 button.style.position = "initial"
@@ -1558,38 +1566,42 @@
                 buttonRow.appendChild(spacer);
                 xPosition += 25;
             }
-            buttons.bold = makeButton("wmd-bold-button", getString("bold"), "0px", bindCommand("doBold"));
-            buttons.italic = makeButton("wmd-italic-button", getString("italic"), "-20px", bindCommand("doItalic"));
+            buttons.bold = makeButton("wmd-bold-button", getString("bold"), "0px", bindCommand("doBold"), "bold");
+            buttons.italic = makeButton("wmd-italic-button", getString("italic"), "-20px", bindCommand("doItalic"), "italic");
             makeSpacer(1);
             buttons.link = makeButton("wmd-link-button", getString("link"), "-40px", bindCommand(function (chunk, postProcessing) {
                 return this.doLinkOrImage(chunk, postProcessing, false);
-            }));
-            buttons.quote = makeButton("wmd-quote-button", getString("quote"), "-60px", bindCommand("doBlockquote"));
-            buttons.code = makeButton("wmd-code-button", getString("code"), "-80px", bindCommand("doCode"));
+            }), "link");
+            buttons.quote = makeButton("wmd-quote-button", getString("quote"), "-60px", bindCommand("doBlockquote"), "quote");
+            buttons.code = makeButton("wmd-code-button", getString("code"), "-80px", bindCommand("doCode"), "code");
             buttons.image = makeButton("wmd-image-button", getString("image"), "-100px", bindCommand(function (chunk, postProcessing) {
                 return this.doLinkOrImage(chunk, postProcessing, true);
-            }));
+            }), "image");
             makeSpacer(2);
             buttons.olist = makeButton("wmd-olist-button", getString("olist"), "-120px", bindCommand(function (chunk, postProcessing) {
                 this.doList(chunk, postProcessing, true);
-            }));
+            }), "olist");
             buttons.ulist = makeButton("wmd-ulist-button", getString("ulist"), "-140px", bindCommand(function (chunk, postProcessing) {
                 this.doList(chunk, postProcessing, false);
-            }));
-            buttons.heading = makeButton("wmd-heading-button", getString("heading"), "-160px", bindCommand("doHeading"));
-            buttons.hr = makeButton("wmd-hr-button", getString("hr"), "-180px", bindCommand("doHorizontalRule"));
+            }), "ulist");
+            buttons.heading = makeButton("wmd-heading-button", getString("heading"), "-160px", bindCommand("doHeading"), "heading");
+            buttons.hr = makeButton("wmd-hr-button", getString("hr"), "-180px", bindCommand("doHorizontalRule"), "hr");
             makeSpacer(3);
-            buttons.undo = makeButton("wmd-undo-button", getString("undo"), "-200px", null);
-            buttons.undo.execute = function (manager) { if (manager) manager.undo(); };
+            buttons.undo = makeButton("wmd-undo-button", getString("undo"), "-200px", null, "undo");
+            if (buttons.undo) {
+                buttons.undo.execute = function (manager) { if (manager) manager.undo(); };
+            }
 
             var redoTitle = /win/.test(nav.platform.toLowerCase()) ?
                 getString("redo") :
                 getString("redomac"); // mac and other non-Windows platforms
 
-            buttons.redo = makeButton("wmd-redo-button", redoTitle, "-220px", null);
-            buttons.redo.execute = function (manager) { if (manager) manager.redo(); };
+            buttons.redo = makeButton("wmd-redo-button", redoTitle, "-220px", null, "redo");
+            if (buttons.redo) {
+                buttons.redo.execute = function (manager) { if (manager) manager.redo(); };
+            }
 
-            if (helpOptions) {
+            if (helpOptions && !isBlocked("help")) {
                 var helpButton = document.createElement("li");
                 var helpButtonImage = document.createElement("span");
                 helpButton.appendChild(helpButtonImage);
@@ -1620,18 +1632,24 @@
 
     }
 
-    function CommandManager(pluginHooks, getString, converter, wrapImageInLink, convertImagesToLinks) {
+    function CommandManager(pluginHooks, getString, converter, wrapImageInLink, convertImagesToLinks, blocked) {
         this.hooks = pluginHooks;
         this.getString = getString;
         this.converter = converter;
         this.wrapImageInLink = wrapImageInLink;
         this.convertImagesToLinks = convertImagesToLinks;
+        this.blocked = blocked || [];
     }
 
     var commandProto = CommandManager.prototype;
 
     // The markdown symbols - 4 spaces = code, > = blockquote, etc.
     commandProto.prefixes = "(?:\\s{4,}|\\s*>|\\s*-\\s+|\\s*\\d+\\.|=|\\+|-|_|\\*|#|\\s*\\[[^\n]]+\\]:)";
+
+    // Returns true if the feature is blocked, false otherwise.
+    commandProto.isBlocked = function (feature) {
+        return this.blocked && this.blocked.indexOf(feature) !== -1;
+    };
 
     // Remove markdown symbols from the chunk selection.
     commandProto.unwrap = function (chunk) {
@@ -1655,10 +1673,12 @@
     };
 
     commandProto.doBold = function (chunk, postProcessing) {
+        if (this.isBlocked("bold")) return;
         return this.doBorI(chunk, postProcessing, 2, this.getString("boldexample"));
     };
 
     commandProto.doItalic = function (chunk, postProcessing) {
+        if (this.isBlocked("italic")) return;
         return this.doBorI(chunk, postProcessing, 1, this.getString("italicexample"));
     };
 
@@ -1887,7 +1907,7 @@
     }
 
     commandProto.doLinkOrImage = function (chunk, postProcessing, isImage) {
-
+        if ((isImage && this.isBlocked("image")) || (!isImage && this.isBlocked("link"))) return;
         chunk.trimWhitespace();
         chunk.findTags(/\s*!?\[/, /\][ ]?(?:\n[ ]*)?(\[.*?\])?/);
         var background;
@@ -1992,7 +2012,6 @@
     // When making a list, hitting shift-enter will put your cursor on the next line
     // at the current indent level.
     commandProto.doAutoindent = function (chunk, postProcessing) {
-
         var commandMgr = this,
             fakeSelection = false;
 
@@ -2013,17 +2032,19 @@
         }
 
         if (/(\n|^)[ ]{0,3}([*+-]|\d+[.])[ \t]+.*\n$/.test(chunk.before)) {
-            if (commandMgr.doList) {
+            var isNumbered = /\d+[.]/.test(chunk.before);
+            var listType = isNumbered ? "olist" : "ulist";
+            if (commandMgr.doList && !commandMgr.isBlocked(listType)) {
                 commandMgr.doList(chunk);
             }
         }
         if (/(\n|^)[ ]{0,3}>[ \t]+.*\n$/.test(chunk.before)) {
-            if (commandMgr.doBlockquote) {
+            if (commandMgr.doBlockquote && !commandMgr.isBlocked("quote")) {
                 commandMgr.doBlockquote(chunk);
             }
         }
         if (/(\n|^)(\t|[ ]{4,}).*\n$/.test(chunk.before)) {
-            if (commandMgr.doCode) {
+            if (commandMgr.doCode && !commandMgr.isBlocked("code")) {
                 commandMgr.doCode(chunk);
             }
         }
@@ -2035,6 +2056,8 @@
     };
 
     commandProto.doBlockquote = function (chunk, postProcessing) {
+        
+        if (this.isBlocked("quote")) return;
 
         chunk.selection = chunk.selection.replace(/^(\n*)([^\r]+?)(\n*)$/,
             function (totalMatch, newlinesBefore, text, newlinesAfter) {
@@ -2179,6 +2202,8 @@
     };
 
     commandProto.doCode = function (chunk, postProcessing) {
+        
+        if (this.isBlocked("code")) return;
 
         var hasTextBefore = /\S[ ]*$/.test(chunk.before);
         var hasTextAfter = /^[ ]*\S/.test(chunk.after);
@@ -2244,6 +2269,9 @@
     };
 
     commandProto.doList = function (chunk, postProcessing, isNumberedList) {
+
+        if (isNumberedList && this.isBlocked("olist")) return;
+        if (!isNumberedList && this.isBlocked("ulist")) return;
 
         // These are identical except at the very beginning and end.
         // Should probably use the regex extension function to make this clearer.
@@ -2347,6 +2375,8 @@
     };
 
     commandProto.doHeading = function (chunk, postProcessing) {
+        
+        if (this.isBlocked("heading")) return;
 
         // Remove leading/trailing whitespace and reduce internal spaces to single spaces.
         chunk.selection = chunk.selection.replace(/\s+/g, " ");
@@ -2406,6 +2436,7 @@
     };
 
     commandProto.doHorizontalRule = function (chunk, postProcessing) {
+        if (this.isBlocked("hr")) return;
         chunk.startTag = "----------\n";
         chunk.selection = "";
         chunk.skipLines(2, 1, true);
