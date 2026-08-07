@@ -8,8 +8,8 @@
         Converter = output.Converter;
     }
         
-    output.getSanitizingConverter = function () {
-        var converter = new Converter();
+    output.getSanitizingConverter = function (options) {
+        var converter = new Converter(options);
         converter.hooks.addFalse("isValidTag");
         converter.hooks.chain("postConversion", function (html) {
             return sanitizeHtml(html, converter);
